@@ -1,0 +1,11 @@
+torch>=2.4
+transformers>=4.44
+accelerate
+scikit-learn>=1.5
+pandas
+pyarrow
+huggingface_hub
+matplotlib
+
+[dev]
+pytest

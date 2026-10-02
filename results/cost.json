@@ -1,0 +1,51 @@
+{
+  "model": "Qwen/Qwen3-8B",
+  "device": "mps",
+  "layer": 18,
+  "pooling": "mean",
+  "batch_size": 4,
+  "forward_no_capture_ms": 54.987967014312744,
+  "forward_with_capture_ms": 56.11974000930786,
+  "capture_overhead_pct": 2.0582193822523562,
+  "probe_score_us": 2.272274275026712,
+  "guard_ms_median": 156.92939207122618,
+  "guard": {
+    "wildguard-vanilla": {
+      "auc": 0.9419849780105747,
+      "lo": 0.9248332880367643,
+      "hi": 0.9563054059396155,
+      "n": 903,
+      "wall_s": 90.83076477050781,
+      "per_prompt_ms": 100.58777936933312,
+      "prompt_tokens": 47917
+    },
+    "wildguard-adversarial": {
+      "auc": 0.7971866842834585,
+      "lo": 0.7669826141600334,
+      "hi": 0.8316644645676903,
+      "n": 796,
+      "wall_s": 279.5076308250427,
+      "per_prompt_ms": 351.1402397299532,
+      "prompt_tokens": 161984
+    },
+    "toxicchat-toxicity": {
+      "auc": 0.9234110313675823,
+      "lo": 0.908858654402927,
+      "hi": 0.9380077738405853,
+      "n": 2803,
+      "wall_s": 439.873085975647,
+      "per_prompt_ms": 156.92939207122618,
+      "prompt_tokens": 215897
+    },
+    "toxicchat-jailbreaking": {
+      "auc": 0.873332615733649,
+      "lo": 0.84326649996274,
+      "hi": 0.8996501184039478,
+      "n": 2803,
+      "wall_s": 439.873085975647,
+      "per_prompt_ms": 156.92939207122618,
+      "prompt_tokens": 215897
+    }
+  },
+  "marginal_ratio": 138.38018315814128
+}

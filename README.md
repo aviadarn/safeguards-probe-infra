@@ -17,6 +17,10 @@ trivial baseline.
 
 ![probe results](results/probe-floor.png)
 
+A probe is **138× cheaper at the margin** than prompting the same model to
+classify — 1.13 ms against 156.9 ms — and it wins on the distribution it was fit
+on while losing on real traffic. Both halves of that matter.
+
 Two further findings, both infrastructure problems rather than research ones:
 
 1. **A pooling bug that costs 0.083 AUC on a 0.6B model and 0.003 on an 8B.**
@@ -68,6 +72,60 @@ Note what the controls did *not* do: on the plain-prompt split they **cleared**
 the probe. Within each length quartile it still scores 0.936–0.958, so there the
 0.963 is not a length detector. A control suite that found a problem everywhere
 would be useless.
+
+## What a probe costs, against what the alternative costs
+
+The case for detecting misuse from model internals is a cost argument, and it is
+usually asserted. Measured on the same box, with the same weights:
+
+| | per prompt |
+|---|---|
+| forward pass, no capture | 54.99 ms |
+| forward pass, capturing **all 37 layers** | 56.12 ms (**+2.1%**) |
+| scoring a cached vector | **2.3 µs** |
+| **probe, marginal** | **1.13 ms** |
+| the same model prompted to classify | **156.9 ms** |
+
+**138×.** And 1.13 ms is the pessimistic bound — it captures every layer, where a
+deployed probe needs one.
+
+"Marginal" is load-bearing. A probe reads the residual stream of a forward pass
+the server already ran to answer the user; a prompted guard is a *second* pass
+over a longer sequence, because the prompt now carries a classification
+instruction too.
+
+![cost against quality](results/cost-quality.png)
+
+### The ranking flips
+
+The guard here is the same Qwen3-8B, asked to answer `harmful` or `unharmful`,
+scored by the logit gap between those two tokens rather than by string-matching
+generated text — string matching would charge it for formatting mistakes, which
+is an error [the companion audit](https://github.com/aviadarn/chartqa-annotation-audit)
+already found a benchmark making against models.
+
+| scored on | probe (1.13 ms) | prompted guard (157 ms) | `len(prompt)` | moderation API |
+|---|---|---|---|---|
+| plain prompts | **0.974** | 0.942 | 0.737 | — |
+| jailbreak-framed prompts | **0.846** | 0.797 | 0.684 | — |
+| real user turns, toxicity | 0.852 | **0.923** | 0.664 | 0.913 |
+| real jailbreak attempts | 0.841 | 0.873 | **0.916** | 0.856 |
+
+**The probe wins where it was fit. The general model wins on real traffic.** On
+the two WildGuard splits the probe beats the guard outright while costing 1/138th
+as much. On both ToxicChat splits it loses, by 7 points on toxicity.
+
+That is the honest engineering summary, and it is not the one a probe paper
+writes. A probe is a cheap, sharp instrument for a distribution you have labelled
+examples of; prompting the model is expensive and blunt and does not care that it
+has never seen your data. Which you want depends on whether your traffic looks
+like your training set — and the measurement for that is the gap between rows 2
+and 3, not the headline AUC.
+
+The guard is *not* a tuned safety classifier. Llama Guard and WildGuard are
+fine-tuned for exactly this and would do better. The claim is narrow: for a team
+holding one general model, this is what the alternative to a probe costs and
+scores.
 
 ## The `h[:, -1]` pooling bug, priced six ways
 
@@ -215,10 +273,12 @@ mean one thing.
 | `probeinfra/extract.py` | one forward pass, every layer, four poolings, length-sorted batches |
 | `probeinfra/probe.py` | logistic probe, stratified bootstrap AUC, three eval settings |
 | `probeinfra/controls.py` | the four controls, and why one stratifies instead of residualising |
+| `probeinfra/guard.py` | the same model prompted as a classifier — the thing a probe replaces |
+| `bench.py` | capture overhead, probe scoring cost, guard cost |
 | `probeinfra/baselines.py` | the two rivals: `len(prompt)` and the moderation scores ToxicChat ships |
 | `probeinfra/data.py` | loaders that refuse nulls and deduplicate prompts |
 | `probeinfra/cli.py` | `extract` / `sweep` / `controls` / `transfer` |
-| `tests/` | 43 tests, most of them about the ways a probe pipeline lies |
+| `tests/` | 47 tests, most of them about the ways a probe pipeline lies |
 
 ```bash
 pip install -e .
@@ -227,7 +287,8 @@ python -m probeinfra sweep    --model Qwen/Qwen3-8B --set wildguard-vanilla   # 
 python -m probeinfra controls --model Qwen/Qwen3-8B --layer 18 --pooling mean # exits 1 on failure
 python -m probeinfra transfer --model Qwen/Qwen3-8B --layer 18 --pooling mean
 MODEL=Qwen/Qwen3-8B BS=4 LAYER=18 ./run_all.sh                                # all of the above
-python tables.py && python make_figures.py                                    # every number here
+python bench.py --model Qwen/Qwen3-8B --layer 18                               # the cost table
+python tables.py && python make_figures.py && python make_cost_figure.py      # every number here
 ```
 
 `tables.py` prints every table in this README from the JSON the runs wrote, so a

@@ -1,0 +1,2 @@
+[console_scripts]
+probeinfra = probeinfra.cli:main
