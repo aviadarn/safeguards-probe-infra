@@ -1,0 +1,21 @@
+[project]
+name = "probeinfra"
+version = "0.1.0"
+description = "Activation cache, probe harness and control suite for misuse-detection probes on model internals"
+requires-python = ">=3.12"
+dependencies = [
+    "torch>=2.4", "transformers>=4.44", "accelerate",
+    "scikit-learn>=1.5", "pandas", "pyarrow", "huggingface_hub",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+probeinfra = "probeinfra.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::RuntimeWarning"]
+markers = ["slow: touches the network on first run"]

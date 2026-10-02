@@ -1,0 +1,44 @@
+{
+  "model": "Qwen/Qwen3-0.6B",
+  "layer": 16,
+  "pooling": "mean",
+  "padding_side": "left",
+  "settings": [
+    {
+      "name": "wildguard-vanilla",
+      "pretty": "plain prompts\n(out-of-fold, same distribution)",
+      "n": 903,
+      "auc": 0.963161535800761,
+      "lo": 0.9512567327173,
+      "hi": 0.974215669318575,
+      "length_floor": 0.7365444482877896
+    },
+    {
+      "name": "wildguard-adversarial",
+      "pretty": "jailbreak-framed prompts\n(same harms, new phrasing)",
+      "n": 796,
+      "auc": 0.7946053946053946,
+      "lo": 0.7628084818407398,
+      "hi": 0.8253546453546453,
+      "length_floor": 0.6844961490122781
+    },
+    {
+      "name": "toxicchat-toxicity",
+      "pretty": "real user turns\n(ToxicChat, human-labelled)",
+      "n": 2803,
+      "auc": 0.7322797498344764,
+      "lo": 0.7068918075635622,
+      "hi": 0.7576749013202667,
+      "length_floor": 0.664381057182339
+    },
+    {
+      "name": "toxicchat-jailbreaking",
+      "pretty": "real jailbreak attempts\n(ToxicChat)",
+      "n": 2803,
+      "auc": 0.7310077583565863,
+      "lo": 0.6960634827320675,
+      "hi": 0.7618781722736041,
+      "length_floor": 0.9160035769584262
+    }
+  ]
+}
