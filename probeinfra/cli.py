@@ -19,6 +19,7 @@ from pathlib import Path
 
 import numpy as np
 
+from .baselines import openai_moderation
 from .cache import ActivationCache
 from .controls import length_matched, length_only, random_features, shuffled_labels
 from .data import toxicchat, wildguard
@@ -184,11 +185,19 @@ def cmd_transfer(a) -> None:
                      seed=a.seed, n_boot=a.boot)
         floor = length_only(ps.text, yte, n_boot=a.boot)
         verdict = "clears" if r.lo > floor.auc else "DOES NOT CLEAR"
-        print(f"{r.row()}   length floor {floor.auc:.3f}   {verdict} it")
+        rival = None
+        if name.startswith("toxicchat"):
+            rival = openai_moderation(ps, n_boot=a.boot).auc
+        rtxt = f"   moderation API {rival:.3f}" if rival is not None else ""
+        print(f"{r.row()}   length floor {floor.auc:.3f}   {verdict} it{rtxt}")
         out["settings"].append({"name": name, "pretty": pretty.get(name, name),
                                 "n": len(yte), "auc": r.auc, "lo": r.lo, "hi": r.hi,
-                                "length_floor": floor.auc})
-    p = Path("results") / f"transfer_L{a.layer}_{a.pooling}_{a.padding_side}.json"
+                                "length_floor": floor.auc, "moderation_api": rival})
+    # The model belongs in the filename: two models whose best layer differs
+    # would otherwise be told apart only by that coincidence, and two models
+    # sharing a best layer would overwrite each other.
+    tag = a.model.replace("/", "__")
+    p = Path("results") / f"transfer_{tag}_L{a.layer}_{a.pooling}_{a.padding_side}.json"
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(out, indent=2))
     print(f"wrote {p}")
