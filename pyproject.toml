@@ -9,6 +9,14 @@ dependencies = [
     "matplotlib",
 ]
 
+# Without this, setuptools' flat-layout discovery sees `results/` next to
+# `probeinfra/` and refuses to build: "Multiple top-level packages discovered in
+# a flat-layout". It never failed locally because `python -m probeinfra` from the
+# repo root needs no install -- so the README's own install line was the one path
+# nothing exercised until CI ran it.
+[tool.setuptools]
+packages = ["probeinfra"]
+
 [project.optional-dependencies]
 dev = ["pytest"]
 
